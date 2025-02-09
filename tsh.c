@@ -3,7 +3,7 @@
  *
  * This program implements a tiny shell with job control.
  *
- * <Put your name and NetID here>
+ * Cindy Nguyen (cn32)
  */
 
 #include <sys/types.h>
@@ -54,6 +54,9 @@ typedef volatile struct Job *JobP;
  */
 static volatile struct Job jobs[MAXJOBS];
 static int nextjid = 1; // next job ID to allocate
+
+char **dirs; //Variable to store the search paths parsed in initpath().
+int dirs_count; //Variable to store the number strings in char **dirs.
 
 extern char **environ; // defined by libc
 
@@ -185,17 +188,22 @@ main(int argc, char **argv)
 		}
 	}
 
+
 	/*
 	 * Install sigint_handler() as the handler for SIGINT (ctrl-c).  SET
 	 * action.sa_mask TO REFLECT THE SYNCHRONIZATION REQUIRED BY YOUR
 	 * IMPLEMENTATION OF sigint_handler().
 	 */
+
 	action.sa_handler = sigint_handler;
 	action.sa_flags = SA_RESTART;
 	if (sigemptyset(&action.sa_mask) < 0)
 		unix_error("sigemptyset error");
+	if (sigaddset(&action.sa_mask, SIGCHLD) < 0 || sigaddset(&action.sa_mask, SIGTSTP) < 0) 
+		unix_error("sigaddset error");
 	if (sigaction(SIGINT, &action, NULL) < 0)
 		unix_error("sigaction error");
+
 
 	/*
 	 * Install sigtstp_handler() as the handler for SIGTSTP (ctrl-z).  SET
@@ -206,6 +214,8 @@ main(int argc, char **argv)
 	action.sa_flags = SA_RESTART;
 	if (sigemptyset(&action.sa_mask) < 0)
 		unix_error("sigemptyset error");
+	if (sigaddset(&action.sa_mask, SIGCHLD) < 0 || sigaddset(&action.sa_mask, SIGINT) < 0) 
+		unix_error("sigaddset error");
 	if (sigaction(SIGTSTP, &action, NULL) < 0)
 		unix_error("sigaction error");
 
@@ -218,6 +228,8 @@ main(int argc, char **argv)
 	action.sa_flags = SA_RESTART;
 	if (sigemptyset(&action.sa_mask) < 0)
 		unix_error("sigemptyset error");
+	if (sigaddset(&action.sa_mask, SIGINT) < 0 || sigaddset(&action.sa_mask, SIGTSTP) < 0) 
+		unix_error("sigaddset error");
 	if (sigaction(SIGCHLD, &action, NULL) < 0)
 		unix_error("sigaction error");
 
@@ -283,9 +295,65 @@ main(int argc, char **argv)
 static void
 eval(const char *cmdline)
 {
+	pid_t pid;
+	char *argv[MAXARGS];
+	int bg = parseline(cmdline, argv);
+	//JobP job;
+	if (!builtin_cmd(argv)) {
+		//* sigset_t mask, prev;
+		//* sigprocmask(SIG_BLOCK, &mask, &prev); /* Block SIGCHLD */
+		if ((pid = fork()) == 0) {
+			//in child
+			
+			//* sigprocmask(SIG_SETMASK, &prev, NULL); /* Unblock SIGCHLD */
+			setpgid(0,0);
 
-	// Prevent an "unused parameter" warning.  REMOVE THIS STATEMENT!
-	(void)cmdline;
+			// char *final_path;
+			// if (strchr(cmdline, '/') != NULL || getenv("PATH") == NULL) {
+			// 	//path name
+			// 	final_path = cmdline;
+			// } else {
+			// 	//executable name
+			// 	for(int i = 0; i < dirs_count; i++) {
+			// 		char *path = dirs[i];
+			// 		char *exec = malloc(strlen(path) + strlen(argv[0]) + 1);
+			// 		strcat(exec, path);
+			// 		strcat(exec, argv[0]);
+			// 		if (access(exec, F_OK) == 0) {
+			// 			final_path = exec;
+			// 			break;
+			// 		}
+			// 	}
+			// }			
+			// int exec_status = execve(final_path, argv, environ);
+			int exec_status = execvp(argv[0], argv); //CANT USE EXECVP!
+
+			if(exec_status < 0) {
+				printf("%s: Command not found\n", argv[0]);
+				exit(1);
+			}			
+		}
+		//sigprocmask(SIG_BLOCK, &mask, &prev); /* Block SIGCHLD */
+		addjob(jobs, pid, bg ? BG : FG, cmdline);
+		if (!bg) {
+			waitfg(pid);
+		} else {
+			//print a status message like: [1] (10113) ./myspin 1 &
+			//job = getjobpid(jobs, pid);
+			//addjob(jobs, pid, bg ? BG : FG, cmdline);
+			//printf("[%d] (%d) %s", job->jid, job->pid, cmdline);
+			//printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
+			Sio_puts("[");
+			Sio_putl(pid2jid(pid));
+			Sio_puts("] (");
+			Sio_putl(pid);
+			Sio_puts(") ");
+			Sio_puts(cmdline);
+		}
+	}
+
+	return;
+
 }
 
 /*
@@ -374,10 +442,16 @@ parseline(const char *cmdline, char **argv)
 static bool
 builtin_cmd(char **argv)
 {
-
-	// Prevent an "unused parameter" warning.  REMOVE THIS STATEMENT!
-	(void)argv;
-	return (false); // This is not a built-in command.
+	if (strcmp(argv[0], "quit") == 0) {
+		exit(0);
+	} else if (strcmp(argv[0], "bg") == 0 || strcmp(argv[0], "fg") == 0) {
+		do_bgfg(argv);
+		return true;
+	} else if (strcmp(argv[0], "jobs") == 0) {
+		listjobs(jobs);
+		return true;
+	}
+	return false; 
 }
 
 /*
@@ -394,7 +468,57 @@ do_bgfg(char **argv)
 {
 
 	// Prevent an "unused parameter" warning.  REMOVE THIS STATEMENT!
-	(void)argv;
+	//(void)argv;
+
+	JobP job = NULL;
+	char *cmd = argv[0]; 
+	char *param = argv[1];
+	
+	if(param == NULL) {
+		printf("%s command requires PID or %%jobid argument\n", cmd);
+		return;
+	}
+
+	if(param[0] != '%' && !isdigit(param[0])) { //IMPROVE?
+		printf("%s: argument must be a PID or %%jobid\n", cmd);
+		return;
+	}
+
+	if(isdigit(param[0])) {
+		pid_t pid = atoi(param);
+		job = getjobpid(jobs, pid);
+		if(job == NULL) {
+			printf("(%d): No such process\n", pid);
+			return;
+		}
+	}
+
+	if(param[0] == '%') {
+		char *param_jid = &param[1];
+		int jid = atoi(param_jid);
+		job = getjobjid(jobs, jid);
+		if(job == NULL) {
+			printf("%%%d: No such job\n", jid);
+			return;
+		}
+	}
+	
+	if(strcmp(cmd, "bg") == 0) {
+		kill(-(job->pid), SIGCONT);
+		job->state = BG;
+		Sio_puts("[");
+		Sio_putl(job->jid);
+		Sio_puts("] (");
+		Sio_putl(job->pid);
+		Sio_puts(") ");
+		Sio_puts((const char*)job->cmdline);
+	}
+	if(strcmp(cmd, "fg") == 0) {
+		kill(-(job->pid), SIGCONT);
+		job->state = FG;
+		waitfg(job->pid);
+	}
+	return;
 }
 
 /*
@@ -409,9 +533,20 @@ do_bgfg(char **argv)
 static void
 waitfg(pid_t pid)
 {
+	JobP job = getjobpid(jobs, pid);
 
-	// Prevent an "unused parameter" warning.  REMOVE THIS STATEMENT!
-	(void)pid;
+	if(!job) {
+		return;
+	}	
+
+	//sigprocmask here: block
+	while (job->pid == pid && job->state == FG) {
+		sleep(1);
+		//sigsuspend() ??prev
+	}
+	//sigprocmask here: unblock
+
+	return;
 }
 
 /*
@@ -429,7 +564,44 @@ initpath(const char *pathstr)
 {
 
 	// Prevent an "unused parameter" warning.  REMOVE THIS STATEMENT!
-	(void)pathstr;
+	//(void)pathstr;
+
+	//just parse PATH by : into array of dirs bc not given executable yet
+
+	//Count number of search paths by counting number of colons + 1.
+	int count = 0;
+	for(int i = 0; i < (int)strlen(pathstr); i++) {
+		if (pathstr[i] == ':') {
+			count++;
+		}
+	}
+	count++; //+1 for final path without a colon
+
+	dirs_count = count;
+	dirs = (char **)malloc(count * sizeof(char *));
+	int size = 0;
+
+	char *path_copy = strdup(pathstr); //has malloc so need free!
+	//char *path_start = strdup(pathstr);
+	while (path_copy) {
+		char *new_ptr = strsep(&path_copy, ":");
+		if(strcmp(new_ptr, "")) {
+			char *pwd = getenv("PWD");
+			char *exec = malloc(strlen(pwd) + 2);
+			strcat(exec, pwd);
+			strcat(exec, "/");
+			dirs[size] = exec;
+		} else {
+			char *exec = malloc(strlen(new_ptr) + 2);
+			strcat(exec, new_ptr);
+			strcat(exec, "/");
+			dirs[size] = exec;
+		}
+		size++;
+	}
+
+	return;
+
 }
 
 /*
@@ -452,9 +624,52 @@ initpath(const char *pathstr)
 static void
 sigchld_handler(int signum)
 {
-
-	// Prevent an "unused parameter" warning.
 	(void)signum;
+	pid_t pid;
+	int status;
+	int more_chld = 1;
+
+	while(more_chld) {
+		pid = waitpid(-1, &status, WUNTRACED|WNOHANG);
+		more_chld = pid > 0;
+		if(WIFSTOPPED(status)) {
+			JobP job = getjobpid(jobs, pid);
+			if(job) {
+				job->state = ST;
+				//fprintf(stdout, "Job [%d] (%d) terminated by signal %d\n", pid2jid(pid), pid, WSTOPSIG(status));
+				Sio_puts("Job [");
+				Sio_putl(pid2jid(pid));
+				Sio_puts("] (");
+				Sio_putl(pid);
+				Sio_puts(") stopped by signal SIG");
+				Sio_puts(signame[WSTOPSIG(status)]);
+				Sio_puts("\n");
+			}
+		}
+		else if(WIFEXITED(status)) {
+			deletejob(jobs, pid);
+		}		
+		else if(WIFSIGNALED(status)) {
+			int jid = pid2jid(pid);
+			int success = deletejob(jobs, pid);
+			//printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, WTERMSIG(status));
+			if(success) {
+				Sio_puts("Job [");
+				Sio_putl(jid);
+				Sio_puts("] (");
+				Sio_putl(pid);
+				Sio_puts(") terminated by signal SIG");
+				Sio_puts(signame[WTERMSIG(status)]);
+				Sio_puts("\n");
+				//exit (0);
+			}
+		}
+	}
+
+	// while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+	// 	deletejob(jobs, pid);
+	// }
+	return;
 }
 
 /*
@@ -474,6 +689,14 @@ sigint_handler(int signum)
 
 	// Prevent an "unused parameter" warning.
 	(void)signum;
+	//if(signum == 2) //=numerical value of SIGINT
+
+	pid_t pid = fgpid(jobs);
+	if(pid > 0) {
+		kill(-pid, SIGINT);
+	}
+
+	return;
 }
 
 /*
@@ -493,6 +716,13 @@ sigtstp_handler(int signum)
 
 	// Prevent an "unused parameter" warning.
 	(void)signum;
+
+	pid_t pid = fgpid(jobs);
+	if(pid > 0) {
+		kill(-pid, SIGTSTP);
+	}
+
+	return;
 }
 
 /*

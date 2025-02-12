@@ -55,7 +55,7 @@ typedef volatile struct Job *JobP;
 static volatile struct Job jobs[MAXJOBS];
 static int nextjid = 1; // next job ID to allocate
 
-char **dirs; // Variable to store the search paths parsed in initpath().
+char **dirs;	// Variable to store the search paths parsed in initpath().
 int dirs_count; // Variable to store the number of strings in dirs.
 
 extern char **environ; // defined by libc
@@ -149,10 +149,11 @@ static size_t sio_strlen(const char s[]);
 
 /*
  * main - Performs the read-evaluate/execute loop.
- * 
+ *
  * Requires:
- *   "argc" is an integer that indicates how many arguments were entered on the command line 
- * 	 	when the program was started. "argv" is an array of pointers to arrays of character objects.
+ *   "argc" is an integer that indicates how many arguments were entered on the
+ * command line when the program was started. "argv" is an array of pointers to
+ * arrays of character objects.
  *
  * Effects:
  *   Executes the read-evaluate/execute loop program.
@@ -191,7 +192,6 @@ main(int argc, char **argv)
 		}
 	}
 
-
 	/*
 	 * Install sigint_handler() as the handler for SIGINT (ctrl-c).  SET
 	 * action.sa_mask TO REFLECT THE SYNCHRONIZATION REQUIRED BY YOUR
@@ -202,11 +202,11 @@ main(int argc, char **argv)
 	if (sigemptyset(&action.sa_mask) < 0)
 		unix_error("sigemptyset error");
 	// Block SIGCHLD and SIGTSTP in sigint_handler.
-	if (sigaddset(&action.sa_mask, SIGCHLD) < 0 || sigaddset(&action.sa_mask, SIGTSTP) < 0) 
+	if (sigaddset(&action.sa_mask, SIGCHLD) < 0 ||
+	    sigaddset(&action.sa_mask, SIGTSTP) < 0)
 		unix_error("sigaddset error");
 	if (sigaction(SIGINT, &action, NULL) < 0)
 		unix_error("sigaction error");
-
 
 	/*
 	 * Install sigtstp_handler() as the handler for SIGTSTP (ctrl-z).  SET
@@ -218,7 +218,8 @@ main(int argc, char **argv)
 	if (sigemptyset(&action.sa_mask) < 0)
 		unix_error("sigemptyset error");
 	// Block SIGCHLD and SIGINT in sigtstp_handler.
-	if (sigaddset(&action.sa_mask, SIGCHLD) < 0 || sigaddset(&action.sa_mask, SIGINT) < 0)
+	if (sigaddset(&action.sa_mask, SIGCHLD) < 0 ||
+	    sigaddset(&action.sa_mask, SIGINT) < 0)
 		unix_error("sigaddset error");
 	if (sigaction(SIGTSTP, &action, NULL) < 0)
 		unix_error("sigaction error");
@@ -233,7 +234,8 @@ main(int argc, char **argv)
 	if (sigemptyset(&action.sa_mask) < 0)
 		unix_error("sigemptyset error");
 	// Block SIGINT and SIGTSTP in sigchld_handler.
-	if (sigaddset(&action.sa_mask, SIGINT) < 0 || sigaddset(&action.sa_mask, SIGTSTP) < 0) 
+	if (sigaddset(&action.sa_mask, SIGINT) < 0 ||
+	    sigaddset(&action.sa_mask, SIGTSTP) < 0)
 		unix_error("sigaddset error");
 	if (sigaction(SIGCHLD, &action, NULL) < 0)
 		unix_error("sigaction error");
@@ -305,7 +307,7 @@ eval(const char *cmdline)
 	pid_t pid;
 	char *argv[MAXARGS];
 	int bg = parseline(cmdline, argv);
-	
+
 	// If argv is not a built-in command.
 	if (!builtin_cmd(argv)) {
 		sigset_t mask, prev;
@@ -316,25 +318,30 @@ eval(const char *cmdline)
 		pid = fork();
 		if (pid < 0) {
 			unix_error("fork unsuccessful");
-		}		
+		}
 		if (pid == 0) {
 			// In the child process.
-			
+
 			// Reset handling of SIGINT and SIGTSTP to defaults.
 			signal(SIGINT, SIG_DFL);
 			signal(SIGTSTP, SIG_DFL);
-			sigprocmask(SIG_SETMASK, &prev, NULL); // Unblock SIGCHLD.
-			setpgid(0,0);
+			sigprocmask(SIG_SETMASK, &prev,
+			    NULL); // Unblock SIGCHLD.
+			setpgid(0, 0);
 
 			char *final_path = "";
-			if (strchr(argv[0], '/') != NULL || getenv("PATH") == NULL) {
+			if (strchr(argv[0], '/') != NULL ||
+			    getenv("PATH") == NULL) {
 				// argv[0] is a path name.
 				final_path = strdup(argv[0]);
 			} else {
 				// argv[0] is an executable name.
 				for (int i = 0; i < dirs_count; i++) {
 					char *path = dirs[i];
-					char *exec = malloc(strlen(path) + strlen(argv[0]) + 1); // Remember to free this malloc string.
+					char *exec = malloc(strlen(path) +
+					    strlen(argv[0]) +
+					    1); // Remember to free this malloc
+						// string.
 					strcpy(exec, path);
 					strcat(exec, argv[0]);
 					if (access(exec, F_OK) == 0) {
@@ -344,19 +351,19 @@ eval(const char *cmdline)
 						free(exec);
 					}
 				}
-			}			
+			}
 			int exec_status = execve(final_path, argv, environ);
 			free(final_path);
 
 			if (exec_status < 0) {
 				printf("%s: Command not found.\n", argv[0]);
 				exit(1);
-			}			
+			}
 		}
-		
+
 		setpgid(pid, pid);
 		addjob(jobs, pid, bg ? BG : FG, cmdline);
-		sigprocmask(SIG_SETMASK, &prev, NULL); // Unblock SIGCHLD
+		sigprocmask(SIG_SETMASK, &prev, NULL); // Unblock SIGCHLD.
 		if (!bg) {
 			waitfg(pid);
 		} else {
@@ -365,7 +372,6 @@ eval(const char *cmdline)
 	}
 
 	return;
-
 }
 
 /*
@@ -442,10 +448,12 @@ parseline(const char *cmdline, char **argv)
  *  it immediately.
  *
  * Requires:
- *   "argv" is an array of pointers to arrays of character objects. The first element in the array is the command to be checked.
+ *   "argv" is an array of pointers to arrays of character objects. The first
+ * element in the array is the command to be checked.
  *
  * Effects:
- *   Return true if the first element in the array is a built-in command, and perform the necessary actions. Return false otherwise.
+ *   Return true if the first element in the array is a built-in command, and
+ * perform the necessary actions. Return false otherwise.
  *
  * Note:
  *   In the textbook, this function has the return type "int", but "bool"
@@ -463,14 +471,14 @@ builtin_cmd(char **argv)
 		listjobs(jobs);
 		return true;
 	}
-	return false; 
+	return false;
 }
 
 /*
  * do_bgfg - Execute the built-in bg and fg commands.
  *
  * Requires:
- *   "argv" is an array of pointers to arrays of character objects. 
+ *   "argv" is an array of pointers to arrays of character objects.
  *
  * Effects:
  *   Implements the bg and fg built-in commands.
@@ -479,9 +487,9 @@ static void
 do_bgfg(char **argv)
 {
 	JobP job = NULL;
-	char *cmd = argv[0]; 
+	char *cmd = argv[0];
 	char *param = argv[1];
-	
+
 	// Print out error when param is null.
 	if (param == NULL) {
 		printf("%s command requires PID or %%jobid argument\n", cmd);
@@ -511,7 +519,7 @@ do_bgfg(char **argv)
 			return;
 		}
 	}
-	
+
 	// Print out error when job does not exist.
 	if ((param[0] == '%') && (*jidptr == '\0')) {
 		job = getjobjid(jobs, jid);
@@ -520,14 +528,14 @@ do_bgfg(char **argv)
 			return;
 		}
 	}
-	
+
 	// Execute the built-in bg command.
 	if (strcmp(cmd, "bg") == 0) {
 		kill(-(job->pid), SIGCONT);
 		job->state = BG;
 		printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
 	}
-	
+
 	// Execute the built-in fg command.
 	if (strcmp(cmd, "fg") == 0) {
 		kill(-(job->pid), SIGCONT);
@@ -554,13 +562,14 @@ waitfg(pid_t pid)
 
 	if (!job) {
 		return;
-	}	
+	}
 
 	sigset_t mask, prev;
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &mask, &prev); // Block SIGCHLD
-	// Use sigsuspend() to test whether the specified process is still running in the foreground.
+	// Use sigsuspend() to test whether the specified process is still
+	// running in the foreground.
 	while (job->pid == pid && job->state == FG) {
 		sigsuspend(&prev);
 	}
@@ -577,13 +586,15 @@ waitfg(pid_t pid)
  *   "pathstr" is a valid search path.
  *
  * Effects:
- *   Parse the search path by colons into an array of directories, adding a slash to the end of each string.
+ *   Parse the search path by colons into an array of directories, adding a
+ * slash to the end of each string.
  */
 static void
 initpath(const char *pathstr)
 {
-	//Count number of directories by counting number of colons in the search path + 1.
-	int count = 1;		//+1 for first directory without a colon
+	// Count number of directories by counting number of colons in the
+	// search path + 1.
+	int count = 1; //+1 for first directory without a colon
 	for (int i = 0; i < (int)strlen(pathstr); i++) {
 		if (pathstr[i] == ':') {
 			count++;
@@ -627,7 +638,6 @@ initpath(const char *pathstr)
 	}
 
 	return;
-
 }
 
 /*
@@ -642,7 +652,8 @@ initpath(const char *pathstr)
  *  currently running children to terminate.
  *
  * Requires:
- *   "signum" is an integer that indicates the signal number, which in this case should equal SIGCHLD.
+ *   "signum" is an integer that indicates the signal number, which in this case
+ * should equal SIGCHLD.
  *
  * Effects:
  *   Catches SIGCHILD signals.
@@ -656,9 +667,9 @@ sigchld_handler(int signum)
 		int more_chld = 1;
 
 		while (more_chld) {
-			pid = waitpid(-1, &status, WUNTRACED|WNOHANG);
+			pid = waitpid(-1, &status, WUNTRACED | WNOHANG);
 			more_chld = pid > 0;
-			
+
 			// Handle stopped jobs.
 			if (WIFSTOPPED(status)) {
 				JobP job = getjobpid(jobs, pid);
@@ -703,7 +714,8 @@ sigchld_handler(int signum)
  *  to the foreground job.
  *
  * Requires:
- *   "signum" is an integer that indicates the signal number, which in this case should equal SIGINT.
+ *   "signum" is an integer that indicates the signal number, which in this case
+ * should equal SIGINT.
  *
  * Effects:
  *    Catches SIGINT (ctrl-c) signals and interrupt the job.
@@ -714,7 +726,7 @@ sigint_handler(int signum)
 	if (signum == SIGINT) { // Check if signum is SIGINT.
 		pid_t pid = fgpid(jobs);
 		if (pid > 0) {
-			kill(-pid, SIGINT);		//Interrupt the job.
+			kill(-pid, SIGINT); // Interrupt the job.
 		}
 	}
 
@@ -727,7 +739,8 @@ sigint_handler(int signum)
  *  foreground job by sending it a SIGTSTP.
  *
  * Requires:
- *   "signum" is an integer that indicates the signal number, which in this case should equal SIGTSTP.
+ *   "signum" is an integer that indicates the signal number, which in this case
+ * should equal SIGTSTP.
  *
  * Effects:
  *   Catches SIGTSTP (ctrl-z) signals and stops the job.
@@ -739,7 +752,7 @@ sigtstp_handler(int signum)
 	if (signum == SIGTSTP) { // Check if signum is SIGINT.
 		pid_t pid = fgpid(jobs);
 		if (pid > 0) {
-			kill(-pid, SIGTSTP);	// Stop the job.
+			kill(-pid, SIGTSTP); // Stop the job.
 		}
 	}
 	return;

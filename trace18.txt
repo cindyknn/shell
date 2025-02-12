@@ -1,0 +1,96 @@
+#
+# trace18.txt - Handle a large number of commands
+#
+
+./myspin 5 &
+
+SLEEP 2
+
+fg %1
+
+SLEEP 3
+TSTP
+
+jobs
+
+./mysplit 2
+
+SLEEP 1
+TSTP
+
+jobs
+
+fg %1
+
+jobs
+
+fg %2
+
+jobs
+
+./mystop 1
+./mystop 1 &
+./mystop 2
+./mystop 2 &
+
+SLEEP 8
+
+jobs
+
+bg %1
+fg %2
+
+SLEEP 4
+
+jobs
+
+bg %3
+fg %4
+
+SLEEP 2
+
+jobs
+
+./myint 3
+
+SLEEP 4
+
+jobs
+
+./myspin 2 &
+
+SLEEP 1
+TSTP
+
+./myspin 5
+
+SLEEP 1
+TSTP
+
+fg %1
+
+SLEEP 2
+TSTP
+
+bg %2
+bg %1
+
+SLEEP 1
+TSTP
+
+fg %1
+
+SLEEP 2
+INT
+
+jobs
+
+fg %2
+fg %4
+bg 0001
+bg 000000
+bg alo123
+bg comtamsuon
+bg !@#$%^&*()
+
+jobs

@@ -2,6 +2,7 @@
 # trace16.txt - Handling errors for invalid and valid executable names.
 #
 ./nonsense
+nonsense
 /hello
 /hello 2
 comp321/count/count

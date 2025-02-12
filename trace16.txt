@@ -1,0 +1,16 @@
+#
+# trace16.txt - Handling errors for invalid and valid executable names.
+#
+./nonsense
+/hello
+/hello 2
+comp321/count/count
+/bin/xyz
+/bin/xyz tsh> ./myspin 4
+/bin/ls/ls
+/bin/ls
+./myspin
+./myspin 2 5
+./myspin &
+./myspin 4
+./myspin 4 &

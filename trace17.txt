@@ -1,0 +1,9 @@
+#
+# trace17.txt - Handling SIGTSTP and SIGINT signals coming from processes mystop and myint, not the terminal.
+#
+./mystop 2
+SLEEP 4
+jobs
+./myint 2
+./mystop 3
+jobs

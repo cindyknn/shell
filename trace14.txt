@@ -1,0 +1,15 @@
+#
+# trace14.txt - Handling errors for invalid pid.
+#
+
+/bin/echo tsh> fg
+fg
+bg
+fg x
+bg x
+fg 123456789
+bg 123456789
+fg 12ab
+bg 3c4d
+fg ab12
+bg c3d4

@@ -1,0 +1,16 @@
+#
+# trace15.txt - Handling errors for invalid jid.
+#
+fg %4
+fg %a
+fg %1a
+fg %a1
+fg %1
+SLEEP 2
+TSTP
+bg %4
+bg %b
+bg %1b
+bg %b1
+bg %1
+jobs

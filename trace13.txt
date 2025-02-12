@@ -1,0 +1,26 @@
+#
+# trace13.txt - Make a large number of jobs.
+#
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+
+# These jobs would overflow because there are already 16 jobs.
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &
+./myspin 10 &

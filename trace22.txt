@@ -1,0 +1,15 @@
+#
+# trace22.txt - Run relative path vs. full path of executables.
+#
+
+ps
+/bin/ps
+
+echo 1
+/bin/echo 1
+
+clang
+/usr/lib64/ccache/clang
+
+clock
+/usr/sbin/clock

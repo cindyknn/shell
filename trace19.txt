@@ -1,0 +1,38 @@
+#
+# trace19.txt - Give wrong number of arguments to commands.
+#
+
+/bin/ps 1 2
+/bin/ps 1 2 3
+
+./myspin
+./myspin 4 5
+./myspin 4 5 6
+./myspin &
+./myspin & 5
+./myspin 4 & 5
+./myspin 4 5 &
+
+./mysplit
+./mysplit 4 5
+./mysplit 4 5 6
+./mysplit &
+./mysplit & 5
+./mysplit 4 & 5
+./mysplit 4 5 &
+
+./myint
+./myint 4 5
+./myint 4 5 6
+./myint &
+./myint & 5
+./myint 4 & 5
+./myint 4 5 &
+
+./mystop
+./mystop 4 5
+./mystop 4 5 6
+./mystop &
+./mystop & 5
+./mystop 4 & 5
+./mystop 4 5 &

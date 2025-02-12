@@ -1,0 +1,10 @@
+#
+# trace21.txt - Navigate out and back in to directories to run executables.
+#
+cd ..
+echo 123
+cd /bin
+echo 123
+cd ..
+cd /usr/lib64/ccache
+echo 123

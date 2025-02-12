@@ -1,0 +1,16 @@
+#
+# trace23.txt - Run multiple bg jobs then calling int/stop then calling jobs should still list bg jobs.
+#
+./myspin 2 &
+./myspin 3 &
+./myspin 4 &
+
+SLEEP 1
+TSTP
+echo jobs
+jobs
+
+SLEEP 2
+INT
+echo jobs
+jobs

@@ -1,0 +1,19 @@
+#
+# trace20.txt - Run the correct files in the correct directories given executable names to test initpath().
+#
+
+# In /usr/bin directory.
+python
+ls
+printf
+
+# In /usr/lib64/ccache directory.
+clang
+gcc
+
+# In /usr/sbin directory.
+bridge
+clock
+
+
+

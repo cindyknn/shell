@@ -2,8 +2,8 @@
 # trace22.txt - Run relative path vs. full path of executables.
 #
 
-ps
-/bin/ps
+printf hello
+/bin/printf hello
 
 echo 1
 /bin/echo 1

@@ -5,12 +5,12 @@
 ./myspin 3 &
 ./myspin 4 &
 
-SLEEP 1
+SLEEP 2
 TSTP
 echo jobs
 jobs
 
-SLEEP 2
+SLEEP 1
 INT
 echo jobs
 jobs

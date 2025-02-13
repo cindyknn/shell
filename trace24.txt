@@ -1,0 +1,20 @@
+#
+# trace24.txt - Run bg jobs, bring one to fg and interrupt it, then calling jobs should show only the remaining bg jobs.
+#
+./myspin 6 &
+./myspin 4 &
+./myspin 5 &
+
+echo jobs
+jobs
+
+fg %2
+SLEEP 1
+INT
+
+fg %1
+SLEEP 1
+TSTP
+
+echo jobs
+jobs

@@ -329,7 +329,7 @@ eval(const char *cmdline)
 			    NULL); // Unblock SIGCHLD.
 			setpgid(0, 0);
 
-			char *final_path = "";
+			char *final_path = NULL;
 			if (strchr(argv[0], '/') != NULL ||
 			    getenv("PATH") == NULL) {
 				// argv[0] is a path name.

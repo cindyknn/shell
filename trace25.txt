@@ -1,0 +1,15 @@
+#
+# trace25.txt - Run different myint/mystop/mysplit programs in bg, bring one to fg and then sleep for 6 secs, 
+#   then calling jobs should show only the mystop job since myint and mysplit ended.
+#
+./myint 2 &
+./mystop 3 &
+./mysplit 5 &
+
+echo jobs
+jobs
+
+fg %2
+SLEEP 6
+echo jobs
+jobs

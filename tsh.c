@@ -1,6 +1,4 @@
 /*
- * COMP 321 Project 1: Shell
- *
  * This program implements a tiny shell with job control.
  *
  * Cindy Nguyen (cn32)
